@@ -57,12 +57,21 @@ export interface TeamMember {
   description: string;
 }
 
+export interface ModuleItem {
+  type: 'posture' | 'anatomy' | 'philosophy';
+  refId: string;
+  teacherId?: string;
+}
+
 export interface Module {
   id: string;
   title: string;
   description: string;
   section: string;
   order: number;
+  videoUrl?: string;
+  tips?: string[];
+  items?: ModuleItem[];
 }
 
 export interface TrainingInfo {

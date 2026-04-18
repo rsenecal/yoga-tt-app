@@ -283,7 +283,7 @@ const SimpleForm = ({ fields, formData, setFormData }: any) => (
 
 // ─── Categories tab ───────────────────────────────────────────────────────────
 type CatType = 'postures' | 'anatomy' | 'philosophy';
-interface Category { id: string; name: string; }
+interface Category { id: string; name: string; order?: number; }
 
 const CategoriesTab = ({
   allCategories, onRefresh,
