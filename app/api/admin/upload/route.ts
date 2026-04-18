@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { storage } from '@/lib/firebase-admin';
 import { v4 as uuidv4 } from 'uuid';
 
 export async function POST(request: NextRequest) {
   try {
+    // Lazy-import so initialisation errors surface here, not at module load
+    const { storage } = await import('@/lib/firebase-admin');
+
     const formData = await request.formData();
     const file = formData.get('file') as File;
 
@@ -11,38 +13,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
 
-    // Convert file to buffer
+    const fileExtension = file.name.split('.').pop();
+    const fileName = `images/${uuidv4()}.${fileExtension}`;
+
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Create unique filename
-    const fileExtension = file.name.split('.').pop();
-    const fileName = `${uuidv4()}.${fileExtension}`;
-    const filePath = `images/${fileName}`;
-
-    // Upload to Firebase Storage
     const bucket = storage.bucket();
-    const fileUpload = bucket.file(filePath);
+    console.log('[upload] bucket name:', bucket.name);
 
-    await fileUpload.save(buffer, {
-      metadata: {
-        contentType: file.type,
-      },
-      public: true,
-    });
+    const fileRef = bucket.file(fileName);
+    await fileRef.save(buffer, { metadata: { contentType: file.type } });
 
-    // Get public URL
-    const publicUrl = `https://storage.googleapis.com/${bucket.name}/${filePath}`;
+    // Make the file publicly readable
+    await fileRef.makePublic();
 
-    return NextResponse.json({ url: publicUrl }, { status: 200 });
+    const url = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+    console.log('[upload] success:', url);
+
+    return NextResponse.json({ url }, { status: 200 });
   } catch (error: any) {
-    console.error('Error uploading file:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('[upload] error name   :', error?.name);
+    console.error('[upload] error message:', error?.message);
+    console.error('[upload] error code   :', error?.code);
+    return NextResponse.json({ error: error?.message ?? 'Unknown error' }, { status: 500 });
   }
 }
-
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};

@@ -1,12 +1,13 @@
 import admin from 'firebase-admin';
 
 if (!admin.apps.length) {
+  const b64 = process.env.FIREBASE_SERVICE_ACCOUNT_B64;
+  if (!b64) throw new Error('FIREBASE_SERVICE_ACCOUNT_B64 env var is not set');
+
+  const serviceAccount = JSON.parse(Buffer.from(b64, 'base64').toString('utf8'));
+
   admin.initializeApp({
-    credential: admin.credential.cert({
-      projectId: process.env.FIREBASE_ADMIN_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_ADMIN_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_ADMIN_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-    }),
+    credential: admin.credential.cert(serviceAccount),
     storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
   });
 }
